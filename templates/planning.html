@@ -1,0 +1,1036 @@
+{% extends 'base.html' %}
+{% block title %}planning{% endblock %}
+{% block content %}
+<style>
+    div.polaroid {
+        background-color: white;
+        box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+        float: left;
+        margin: 5px;
+        padding: 2px;
+        overflow: visible;
+    }
+
+    button.delete {
+        height: 20px;
+        width: 25px;
+        font-size: 8px;
+        font-family: DFKai-sb;
+    }
+
+    p.id {
+        display: none;
+    }
+
+    p.index {
+        display: none;
+    }
+
+    #place-list {
+        overflow: hidden;
+        line-height: 45px;
+        font-size: 15px;
+    }
+</style>
+<style>
+    /* Always set the map height explicitly to define the size of the div
+       * element that contains the map. */
+    #map {
+        height: 30%;
+        margin: 10px;
+    }
+
+    #left-panel {
+        height: 30%;
+        margin: 10px;
+        background-color: rgb(76, 221, 173);
+        padding: 10px;
+        overflow: auto;
+    }
+
+    /* Optional: Makes the sample page fill the window. */
+    html,
+    body {
+        height: 900px;
+        width: 1300px;
+        margin: 0;
+        padding: 0;
+        font-size: 15px;
+        overflow: auto;
+        font-family:微軟正黑體;
+    }
+
+    #mode-selector {
+        color: #fff;
+        background-color: #4d90fe;
+        margin: 10px;
+        padding: 5px;
+        width: 20%;
+        float: left;
+    }
+
+    #mode-selector label {
+        font-family: Roboto;
+        font-weight: 300;
+    }
+
+    div.leftBoard {
+        width: 30%;
+        background-color: rgb(240, 233, 145);
+        float: left;
+        height: 116%;
+    }
+
+    div.rightBoard {
+        width: 70%;
+        height: 100%;
+        float: left;
+    }
+
+    div.show-date-info {
+        width: 100%;
+        height: 5%;
+        font-size: 15px;
+    }
+
+    div.today {
+        width: 30%;
+        height: 100%;
+        background-color: rgb(174, 210, 240);
+        text-align: center;
+        float: left;
+        line-height: 45px;
+    }
+
+    div.today-1 {
+        width: 5%;
+        height: 100%;
+        float: left;
+        text-align: center;
+        line-height: 45px;
+    }
+
+    div.todat-2 {
+        width: 45%;
+        height: 100%;
+        float: left;
+        vertical-align: middle;
+        text-align: center;
+        line-height: 200%;
+        background-color: rgb(174, 210, 240);
+    }
+
+    div.date-line {
+        width: 100%;
+        height: 100%;
+        background-color: rgb(94, 222, 231);
+        float: left;
+    }
+
+    div.detail-line {
+        width: 100%;
+        height: 100%;
+        float: left;
+        background-color: rgb(245, 239, 239);
+        overflow: auto;
+    }
+
+    div.placeTime {
+        width: 25%;
+        height: 100%;
+        float: left;
+        font-size: large;
+        text-align: center;
+        line-height: 45px;
+    }
+
+    div.sTime {
+        width: 100%;
+        height: 50%;
+    }
+
+    div.eTime {
+        width: 100%;
+        height: 50%;
+    }
+
+
+    div.placeName {
+        width: 75%;
+        height: 50%;
+        background-color: blanchedalmond;
+        overflow: hidden;
+        float: left;
+    }
+
+    div.placeName2 {
+        width: 75%;
+        height: 50%;
+        float: left;
+    }
+
+    div.col {
+        height: 100px;
+        overflow: auto;
+        background-color: rgb(102, 255, 204);
+    }
+
+    div.route {
+        width: 100%;
+        height: 10%;
+    }
+
+    #btn-calRoute {
+        width: 25%;
+        height: 100%;
+        text-align: center;
+        padding: 0;
+        float: left;
+    }
+
+    #tranMode-floating-panel {
+        height: 100%;
+        width: 50%;
+        padding: 0px;
+        float: left;
+        padding: 2px;
+    }
+
+    #btn-detail {
+        width: 25%;
+        height: 100%;
+        float: left;
+    }
+</style>
+<script src="{{url_for('static', filename='index.js')}}"></script>
+
+<div class="leftBoard">
+    <div id="map"></div>
+    <div id="left-panel"></div>
+</div>
+
+<div class="rightBoard">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col" id="col" ondrop="Drop(event)" ondragover="AllowDrop(event)">
+                {% if resultList %}
+                {% for data in resultList %}
+                <div class="polaroid" draggable="true" ondragstart="Drag(event)" id="{{ data[0] }}">
+                    <button type="button" class="close" aria-label="Close" id="delete">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                    <p class="font-weight-bold">{{ data[0] }}</p>
+                    <p class="id">{{ data[2] }}</p>
+                </div>
+                {% endfor %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="show-date-info">
+        <div class="today">
+            <select id="selectDate" class="form-control form-control-sm"
+                style="margin: 3px; width: 160.36px; height: 39px;" autofocus>
+                {% if max_days %}
+                {% for i in range(1, max_days + 1) %}
+                <option value="{{ i }}">第 {{ i }} 天</option>
+                {% endfor %}
+                {% endif%}
+            </select>
+        </div>
+        <div class="today-1">
+            <p id="today" style="height: 100%;"></p>
+        </div>
+        <div class="todat-2">
+            <label for="appt">選擇行程開始時間</label>
+            <input type="time" id="appt" name="appt" required style="height: 100%; width: 35%;">
+            <button type="button" class="btn btn-danger" id="setTime"
+                style="height: 40px; width: 23%; margin-bottom: 6px;">確定</button>
+
+        </div>
+        <button type="button" class="btn btn-dark" style="float: left; height: 40px; margin: 2px;" onclick="window.location.href='{{ url_for('map')}}'">編輯地點</button>
+        <button type="button" class="btn btn-dark" style="float: left; height: 40px; margin: 2px;" onclick="window.location.href='{{ url_for('final')}}'">輸出結果</button>
+    </div>
+
+    <div class="date-line">
+        <div class="detail-line" id="detail-line" ondrop="Drop(event)" ondragover="AllowDrop(event)"></div>
+    </div>
+</div>
+
+
+<!--給定初始時間-->
+<script>
+
+    index = [];  //宣告playList(placeId)
+    indexPlaceName = [];
+    indexTime = [];  //宣告時間表
+    tranList = [];
+    note = [];  //備註
+    stayTime = [];  //停留時間
+    costTran = [];  //交通花費
+    tranTime = [];  //交通時間
+    cost = [];  //其他消費
+    dayPoint = 0; //日期指定參數
+
+    //移除暫存
+    delPlaceId = [];
+    delLat = [];
+    delLng = [];
+
+    var hour = 08;
+    var minute = 00;
+    var first_date_format = JSON.parse('{{ first_date_format | tojson | safe}}');
+    var year = first_date_format.year;
+    var month = first_date_format.month - 1;
+    var date = first_date_format.date;
+    var firstDay = new Date(year, month, date, hour, minute);
+    var max_days = '{{ max_days }}';
+    toDayList = [];
+    for (var i = 0; i < max_days; i++) {
+        var a = new Date(firstDay.getTime());
+        a.setTime(firstDay.getTime() + i * 24 * 60 * 60 * 1000)
+        toDayList.push(a)
+    }
+    console.log(toDayList)
+</script>
+<!--時間確定按鍵監聽-->
+<script>
+    document.getElementById('setTime').addEventListener('click', function () {
+        var startTime = document.getElementById('appt').value;
+        indexTime = [];
+        if (startTime) {
+            var hour = startTime.substr(0, 2);
+            var minute = startTime.substr(3, 2);
+        } else {
+            var hour = 08;
+            var minute = 00;
+        }
+        var first_date_format = JSON.parse('{{ first_date_format | tojson | safe}}');
+        var year = 1900 + toDayList[dayPoint].getYear();
+        var month = toDayList[dayPoint].getMonth();
+        var date = toDayList[dayPoint].getDate();
+        indexTime[0] = new Date(year, month, date, hour, minute);
+        if (index.length >= 2) {
+            getRouteTran();
+        }
+    });
+</script>
+
+
+
+
+
+
+<!--確定計算路徑-->
+<!--放入detail-line-->
+<script>
+    var discern = null; //辨別
+    $(function () {
+        var placeId = null;
+        var placeName = null;
+        $(document).on('drag', 'div.polaroid', function () {
+            placeId = $(this).find('p.id').text();
+            //count.push(placeId)
+            placeName = $(this).find('p.font-weight-bold').text().trim();
+            discern = this.className;
+        });
+        $(document).on('drop', 'div#detail-line', function () {
+            if (discern === 'polaroid') {
+                var $divTime = $('<div></div>')
+                    .attr('class', 'placeTime')
+                var $sImg = $('<img style="float: left; margin-left: 5px; margin-top: 3px;" src="static/destination.png" height="35px" width="35px">')
+                var $eImg = $('<img style="float: left;" src="static/departure.png" height="45px" width="45px">')
+                var $divStime = $('<div></div>')
+                    .attr('class', 'sTime')
+                var $divEtime = $('<div></div>')
+                    .attr('class', 'eTime')
+                var $divPlace = $('<div></div>')
+                    .attr('class', 'placeName')
+                var $divPlace2 = $('<div><button type="button" class="btn btn-warning" id="btn-calRoute" onclick="showRoute(this)">顯示路徑</button>' +
+                    '<button type="button" id="' + placeName + '" style="height: 100%; width: 25%; float: left;" class="btn btn-primary" data-toggle="modal"' +
+                    'data-target="' + '#' + placeId + '">' +
+                    '詳細資訊' +
+                    '</button>' +
+                    '<p class="index">' + placeId + '</p></div>')
+                    .attr('class', 'placeName2')
+                var $routeDiv = $('<div></div>')
+                    .attr('class', 'route')
+                    .attr('id', placeName)
+                    .attr('draggable', 'true')
+                    .attr('ondragstart', 'Drag(event)')
+                var $delBut = $('<button></button>')
+                    .attr('type', 'button')
+                    .attr('class', 'close')
+                    .attr('aria-label', 'Close')
+                    .attr('id', 'delete')
+                var $span = $('<span>' + '&times;' + '</span>')
+                    .attr('aria-hidden', 'true')
+                var $p1 = $('<a id="place-list" class="place-list">' + placeName + '</a>')
+                var $p2 = $('<p>' + placeId + '</p>')
+                    .attr('class', 'id')
+                var $butChooseTravelMode = $('<div id="tranMode-floating-panel">' +
+                    '<b>Mode: </b>' +
+                    '<select id="tranMode" class="tranMode">' +
+                    '<option value="Driving">Driving</option>' +
+                    '<option value="Bicycling">Bicycling</option>' +
+                    '<option value="Walking">Walking</option>' +
+                    '<option value="Transit">Transit</option>' +
+                    '</select>' +
+                    '</div>')
+                var $modal = $('<div class="modal fade" id="' + placeId + '" tabindex="-1" role="dialog"\
+    aria-labelledby="exampleModalScrollableTitle" aria-hidden="true">\
+    <div class="modal-dialog modal-dialog-scrollable" role="document">\
+        <div class="modal-content">\
+            <div class="modal-header">\
+                <h5 class="modal-title" id="exampleModalScrollableTitle">' + placeName + '</h5>\
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">\
+                    <span aria-hidden="true">&times;</span>\
+                </button>\
+            </div>\
+            <h5 class="modal-title" id="exampleModalScrollableTitle" style="margin: 5px;">預計停留時間</h5>\
+            <div class="modal-body" style="height: 300px;">\
+                <div class="input-group mb-3">\
+                    <div class="input-group-prepend">\
+                        <label class="input-group-text" for="inputGroupSelect01">小時</label>\
+                    </div>\
+                    <select class="custom-select 1" id="inputGroupSelect01">\
+                        <option selected value="0">0</option>\
+                        <option value="1">1</option>\
+                        <option value="2">2</option>\
+                        <option value="3">3</option>\
+                        <option value="4">4</option>\
+                        <option value="5">5</option>\
+                        <option value="6">6</option>\
+                        <option value="7">7</option>\
+                        <option value="8">8</option>\
+                        <option value="9">9</option>\
+                        <option value="10">10</option>\
+                        <option value="11">11</option>\
+                        <option value="12">12</option>\
+                    </select>\
+                </div>\
+                <div class="input-group mb-3">\
+                    <div class="input-group-prepend">\
+                        <label class="input-group-text" for="inputGroupSelect02">分鐘</label>\
+                    </div>\
+                    <select class="custom-select 2" id="inputGroupSelect02">\
+                        <option selected>00</option>\
+                        <option value="15">15</option>\
+                        <option value="30">30</option>\
+                        <option value="45">45</option>\
+                    </select>\
+                </div>\
+                <div class="input-group mb-3">\
+                    <div class="input-group-prepend">\
+                        <span class="input-group-text">$</span>\
+                        <span class="input-group-text">花費</span>\
+                    </div>\
+                    <input type="number" class="form-control 1" id="dolar"\
+                        aria-label="Dollar amount (with dot and two decimal places)" value="0">\
+                </div>\
+                <div class="input-group" style="height: 80px;">\
+                    <div class="input-group-prepend">\
+                        <span class="input-group-text">備註</span>\
+                    </div>\
+                    <textarea class="form-control 2" aria-label="With textarea"></textarea>\
+                </div>\
+            </div>\
+            <div class="modal-footer">\
+                <button type="button" class="btn btn-primary in" data-dismiss="modal">Save changes</button>\
+            </div>\
+        </div>\
+    </div>\
+</div>')
+                $('div#detail-line').append($routeDiv);
+                $($routeDiv).append($divTime);
+                $($divTime).append($sImg);
+                $($divTime).append($divStime);
+                $($divTime).append($eImg);
+                $($divTime).append($divEtime);
+                $($routeDiv).append($divPlace);
+                $($routeDiv).append($divPlace2);
+                $($routeDiv).append($modal);
+                ($divPlace2).append($butChooseTravelMode);
+                $($divPlace).append($delBut);
+                $($delBut).append($span);
+                $($divPlace).append($p1)
+                $($divPlace).append($p2)
+                $(this).find('div.polaroid').remove();
+
+                note.push('');
+                stayTime.push(0);
+                cost.push(0);
+                costTran.push(0);
+                tranTime.push(0);
+
+                getPlaceIdList();
+                delLocationInfo(placeId);
+                if (index.length >= 2) {
+                    getRouteTran();
+                } else {
+                    indexTime = [toDayList[dayPoint]]
+                    toFlask();
+                }
+            } else {
+                getPlaceIdList();
+                getRouteTran();
+            }
+        });
+    });
+    //<!--放入polaroid-->
+    $(function () {
+        var placeId = null;
+        var placeName = null;
+        $(document).on('drag', 'div.route', function () {
+            placeId = $(this).find('p.id').text();
+            discern = this.className;
+            placeName = $(this).find('a#place-list').text().trim();
+        });
+        $(document).on('drop', 'div#col', function () {
+            if (discern === 'route') {
+                var $divpolaroid = $('<div></div>')
+                    .attr('class', 'polaroid')
+                    .attr('draggable', 'true')
+                    .attr('ondragstart', 'Drag(event)')
+                    .attr('id', placeName)
+                var $delBut = $('<button></button>')
+                    .attr('type', 'button')
+                    .attr('class', 'close')
+                    .attr('aria-label', 'Close')
+                    .attr('id', 'delete')
+                var $span = $('<span>' + '&times;' + '</span>')
+                    .attr('aria-hidden', 'true')
+                var $p1 = $('<p>' + placeName + '</p>')
+                    .attr('class', 'font-weight-bold')
+                var $p2 = $('<p>' + placeId + '</p>')
+                    .attr('class', 'id')
+                $('div#col').append($divpolaroid);
+                $($divpolaroid).append($delBut);
+                $($delBut).append($span)
+                $($divpolaroid).append($p1);
+                $($divpolaroid).append($p2);
+                $(this).find('div.route').remove();
+                getPlaceIdList();
+                addLocationInfo(placeId); //增加到選擇database
+
+                indexTime.splice(index.indexOf(placeId));
+                note.splice(index.indexOf(placeId));
+                stayTime.splice(index.indexOf(placeId));
+                cost.splice(index.indexOf(placeId));
+                costTran.splice(index.indexOf(placeId));
+                tranTime.splice(index.indexOf(placeId))
+
+                if (index.length >= 2) {
+                    getRouteTran();
+                } else {
+                    costTran[0] = 0;
+                    tranTime[0] = 0;
+                    toFlask();
+                    ;
+                }
+            } else {
+                return
+            }
+        });
+    });
+
+    function showRoute(event) {
+        var departure = $(event).closest('div').find('p.index').text();
+        var tranMode = $(event).closest('div').find('select#tranMode').val().toUpperCase();
+        if (index[index.indexOf(departure) + 1]) {
+            calRoute(index[index.indexOf(departure)], index[index.indexOf(departure) + 1], tranMode, indexTime[index.indexOf(departure)])
+        } else {
+            alert('請加入目的地')
+        }
+    }
+
+    //先確定所有交通方式
+    function getRouteTran() {
+        var a = document.getElementsByClassName('tranMode');
+        tranList = []
+        for (var i = 0; i < a.length; i++) {
+            tranList.push(a[i].value)
+        }
+        indexTime = [indexTime[0]]
+        count = 0;
+        if (index.length <= 1) {
+            toFlask();
+        }
+        getStTime();
+    }
+
+    //有交通和地點 開始計算時間list
+    function getStTime() {
+        if (count > tranList.length) {
+            return
+        }
+        returnTime(index[count], index[count + 1], tranList[count], indexTime[count]);
+    }
+    //交通方式改變
+    $(document).on('change', 'select.tranMode', function () {
+        getRouteTran();
+    })
+
+    //獲取行程placeId
+    function getPlaceIdList() {
+        var p = document.getElementsByClassName('placeName');
+        index = [];
+        indexPlaceName = [];
+        for (var i = 0; i < p.length; i++) {
+            //console.log(p[i].getElementsByClassName('id')[0].innerText)
+            index.push(p[i].getElementsByClassName('id')[0].innerText)
+            indexPlaceName.push(p[i].getElementsByClassName('place-list')[0].innerText)
+        }
+    }
+
+    //獲取個行程detail
+    $(document).on('click', 'button.btn.btn-primary.in', function () {
+        var id = $(this).closest('div.route').find('p.id').text();
+        var h = $(this).closest('div.modal-content').find('select.custom-select.1')[0].value; //hour
+        var m = $(this).closest('div.modal-content').find('select.custom-select.2')[0].value; //minute
+        var c = $(this).closest('div.modal-content').find('input.form-control.1')[0].value; //cost
+        var n = $(this).closest('div.modal-content').find('textarea.form-control.2')[0].value; //note
+        if (c === '') { c = 0 }
+        var target = index.indexOf(id);
+        stayTime[target] = h * 60 * 60 * 1000 + m * 60 * 1000;
+        cost[target] = c;
+        note[target] = n;
+        getRouteTran();
+    });
+
+    //傳資料給flask
+    //傳送list
+    //加到playList database
+    function toFlask() {
+        var x = document.getElementById('selectDate').value; //日期的id
+        $.ajax({
+            url: $SCRIPT_ROOT + '/save_playList',
+            data: {
+                index: index,
+                indexTime: indexTime,
+                note: note,
+                stayTime: stayTime,
+                cost: cost,
+                costTran: costTran,
+                tranList: tranList,
+                toDay: x,
+                indexPlaceName: indexPlaceName,
+                tranTime: tranTime
+            },
+            traditional: true,
+            success: function (result) {
+            }
+        });
+    }
+
+
+</script>
+<script>
+    //生產時間列
+    function addTimeLine() {
+        var p = document.getElementsByClassName('sTime');
+        var et = document.getElementsByClassName('eTime');
+        for (var i = 0; i < p.length; i++) {
+            if (indexTime[i].getDate() !== toDayList[dayPoint].getDate()) {
+                p[i].innerHTML = indexTime[i].getHours() + ':' + indexTime[i].getMinutes() +'  ('+ (indexTime[i].getMonth() + 1) + '/' + indexTime[i].getDate() +')';
+            } else {
+            p[i].innerHTML = indexTime[i].getHours() + ':' + indexTime[i].getMinutes();
+            }
+            var t = new Date(indexTime[i].getTime());
+            var date = new Date(indexTime[i].getTime());
+            date.setTime(t.getTime() + stayTime[i]);
+            if (date.getDate() !== toDayList[dayPoint].getDate()) {
+            et[i].innerHTML = date.getHours() + ':' + date.getMinutes() +'  (' + (date.getMonth() + 1) + '/' + date.getDate() + ')';
+            } else {
+            et[i].innerHTML = date.getHours() + ':' + date.getMinutes();
+            }
+        }
+        toFlask();
+    }
+
+    //換日期
+    $(document).on('change', 'select#selectDate', function () {
+        let routAll = document.getElementById('detail-line'); //移除所有 'route' element
+        while (routAll.firstChild) {
+            routAll.removeChild(routAll.firstChild);
+        }
+        var x = document.getElementById('selectDate').value; //日期的id
+        dayPoint = document.getElementById('selectDate').value - 1; //日期的id
+        document.getElementById('today').innerHTML = toDayList[dayPoint].getMonth() + 1 + '/' + toDayList[dayPoint].getDate();
+        $.getJSON($SCRIPT_ROOT + '/change_day', {
+            toDay: x
+        },
+            function (data) {
+                index = data.index;
+                indexTime = [new Date(data.indexTime[0])];
+                tranList = data.tranList;
+                cost = data.cost.map(Number);
+                note = data.note;
+                stayTime = data.stayTime.map(Number);
+                indexPlaceName = data.indexPlaceName;
+                costTran = data.costTran;
+                tranTime = data.tranTime;
+                dayPoint = document.getElementById('selectDate').value - 1; //日期的id
+                console.log(indexTime[0])
+                if (index.length !== 0) {
+                    addDetailLine();
+                }
+            });
+    })
+
+    $(document).ready(function () {
+        var x = document.getElementById('selectDate').value; //日期的id
+        dayPoint = document.getElementById('selectDate').value - 1; //日期的id
+        document.getElementById('today').innerHTML = toDayList[dayPoint].getMonth() + 1 + '/' + toDayList[dayPoint].getDate();
+        $.getJSON($SCRIPT_ROOT + '/change_day', {
+            toDay: x
+        },
+            function (data) {
+                index = data.index;
+                indexTime = [new Date(data.indexTime[0])];
+                tranList = data.tranList;
+                cost = data.cost.map(Number);
+                note = data.note;
+                stayTime = data.stayTime.map(Number);
+                indexPlaceName = data.indexPlaceName;
+                costTran = data.costTran;
+                tranTime = data.tranTime;
+                console.log(indexTime[0])
+                if (index.length !== 0) {
+                    addDetailLine();
+                }
+            });
+    });
+
+    function addDetailLine() {
+        for (var i = 0; i < index.length; i++) {
+            var stayHour = parseInt((stayTime[i] / (1000 * 60 * 60)));
+            var stayMin = (stayTime[i] / (1000 * 60)) % 60;
+            console.log(stayMin)
+            var $divTime = $('<div></div>')
+                .attr('class', 'placeTime')
+            var $sImg = $('<img style="float: left; margin-left: 5px; margin-top: 3px;" src="static/destination.png" height="35px" width="35px">')
+            var $eImg = $('<img style="float: left;" src="static/departure.png" height="45px" width="45px">')
+            var $divStime = $('<div></div>')
+                .attr('class', 'sTime')
+            var $divEtime = $('<div></div>')
+                .attr('class', 'eTime')
+            var $divPlace = $('<div></div>')
+                .attr('class', 'placeName')
+            var $divPlace2 = $('<div><button type="button" class="btn btn-warning" id="btn-calRoute" onclick="showRoute(this)">顯示路徑</button>' +
+                '<button type="button" id="' + indexPlaceName[i] + '" style="height: 100%; width: 25%; float: left;" class="btn btn-primary" data-toggle="modal"' +
+                'data-target="' + '#' + index[i] + '">' +
+                '詳細資訊' +
+                '</button>' +
+                '<p class="index">' + index[i] + '</p></div>')
+                .attr('class', 'placeName2')
+            var $routeDiv = $('<div></div>')
+                .attr('class', 'route')
+                .attr('id', indexPlaceName[i])
+                .attr('draggable', 'true')
+                .attr('ondragstart', 'Drag(event)')
+            var $delBut = $('<button></button>')
+                .attr('type', 'button')
+                .attr('class', 'close')
+                .attr('aria-label', 'Close')
+                .attr('id', 'delete')
+            var $span = $('<span>' + '&times;' + '</span>')
+                .attr('aria-hidden', 'true')
+            var $p1 = $('<a id="place-list" class="place-list">' + indexPlaceName[i] + '</a>')
+            var $p2 = $('<p>' + index[i] + '</p>')
+                .attr('class', 'id')
+            var $butChooseTravelMode = $('<div id="tranMode-floating-panel">' +
+                '<b>Mode: </b>' +
+                '<select id="tranMode" class="tranMode">' +
+                '<option value=' + tranList[i] + '>' + tranList[i] + '</option>' +
+                '<option value="Driving">Driving</option>' +
+                '<option value="Bicycling">Bicycling</option>' +
+                '<option value="Walking">Walking</option>' +
+                '<option value="Transit">Transit</option>' +
+                '</select>' +
+                '</div>')
+            var $modal = $('<div class="modal fade" id="' + index[i] + '" tabindex="-1" role="dialog"\
+    aria-labelledby="exampleModalScrollableTitle" aria-hidden="true">\
+    <div class="modal-dialog modal-dialog-scrollable" role="document">\
+        <div class="modal-content">\
+            <div class="modal-header">\
+                <h5 class="modal-title" id="exampleModalScrollableTitle">' + indexPlaceName[i] + '</h5>\
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">\
+                    <span aria-hidden="true">&times;</span>\
+                </button>\
+            </div>\
+            <h5 class="modal-title" id="exampleModalScrollableTitle" style="margin: 5px;">預計停留時間</h5>\
+            <div class="modal-body" style="height: 300px;">\
+                <div class="input-group mb-3">\
+                    <div class="input-group-prepend">\
+                        <label class="input-group-text" for="inputGroupSelect01">小時</label>\
+                    </div>\
+                    <select class="custom-select 1" id="inputGroupSelect01">\
+                        <option selected value='+ stayHour + '>' + stayHour + '</option>\
+                        <option value="0">0</option>\
+                        <option value="1">1</option>\
+                        <option value="2">2</option>\
+                        <option value="3">3</option>\
+                        <option value="4">4</option>\
+                        <option value="5">5</option>\
+                        <option value="6">6</option>\
+                        <option value="7">7</option>\
+                        <option value="8">8</option>\
+                        <option value="9">9</option>\
+                        <option value="10">10</option>\
+                        <option value="11">11</option>\
+                        <option value="12">12</option>\
+                    </select>\
+                </div>\
+                <div class="input-group mb-3">\
+                    <div class="input-group-prepend">\
+                        <label class="input-group-text" for="inputGroupSelect02">分鐘</label>\
+                    </div>\
+                    <select class="custom-select 2" id="inputGroupSelect02">\
+                        <option selected value='+ stayMin + '>' + stayMin + '</option>\
+                        <option value="0">00</option>\
+                        <option value="15">15</option>\
+                        <option value="30">30</option>\
+                        <option value="45">45</option>\
+                    </select>\
+                </div>\
+                <div class="input-group mb-3">\
+                    <div class="input-group-prepend">\
+                        <span class="input-group-text">$</span>\
+                        <span class="input-group-text">花費</span>\
+                    </div>\
+                    <input type="number" class="form-control 1" id="dolar"\
+                        aria-label="Dollar amount (with dot and two decimal places)" value="'+ cost[i] + '">\
+                </div>\
+                <div class="input-group" style="height: 80px;">\
+                    <div class="input-group-prepend">\
+                        <span class="input-group-text">備註</span>\
+                    </div>\
+                    <textarea class="form-control 2" aria-label="With textarea">' + note[i] + '</textarea>\
+                </div>\
+            </div>\
+            <div class="modal-footer">\
+                <button type="button" class="btn btn-primary in" data-dismiss="modal">Save changes</button>\
+            </div>\
+        </div>\
+    </div>\
+</div>')
+            $('div#detail-line').append($routeDiv);
+            $($routeDiv).append($divTime);
+            $($divTime).append($sImg);
+            $($divTime).append($divStime);
+            $($divTime).append($eImg);
+            $($divTime).append($divEtime);
+            $($routeDiv).append($divPlace);
+            $($routeDiv).append($divPlace2);
+            $($routeDiv).append($modal);
+            ($divPlace2).append($butChooseTravelMode);
+            $($divPlace).append($delBut);
+            $($delBut).append($span);
+            $($divPlace).append($p1)
+            $($divPlace).append($p2)
+            //$(this).find('div.polaroid').remove();
+            //note.push('');
+            //stayTime.push(0);
+            //cost.push(0);
+            //costTran.push(0);
+            //getPlaceIdList();
+            //toFlask();
+            //delLocationInfo(placeId);
+            //接著算時間
+        }
+        count = 0;
+        getStTime();
+    }
+</script>
+
+
+
+
+<!--刪除及新增事件-->
+<script>
+    //案刪除按鍵
+    $(function () {
+        $(document).on('click', 'button#delete', function () {
+            var className = $(this).closest('div')[0].className;
+            switch (className) {
+                case "polaroid":
+                    var p = $(this).closest('div').find('p.id').text();
+                    $.getJSON($SCRIPT_ROOT + '/delMap', {
+                        placeId: p
+                    },
+                        function (data) {
+                        });
+                    $(this).closest('div.' + className).remove();
+                    break;
+                case 'placeName':
+                    var p = $(this).closest('div').find('p.id').text(); //再新增資料庫
+                    $(this).closest('div.' + className).remove();
+                    break;
+                default:
+                    console.log('none')
+                    break;
+            }
+        });
+    });
+
+    //移動到下方後 刪除Location_information
+    function delLocationInfo(placeId) {
+        $.getJSON($SCRIPT_ROOT + '/delMap', {
+            placeId: placeId
+        },
+            function (data) {
+                if (delPlaceId.includes(data.placeId) === false) {
+                    delPlaceId.push(data.placeId);
+                    delLat.push(data.lat);
+                    delLng.push(data.lng);
+                }
+            });
+    }
+
+    //新增Location_information
+    function addLocationInfo(placeId) {
+        var lat = delLat[delPlaceId.indexOf(placeId)];
+        var lng = delLng[delPlaceId.indexOf(placeId)];
+        $.getJSON($SCRIPT_ROOT + '/addMap', {
+            placeId: placeId,
+            placeLocation_lat: lat,
+            placeLocation_lng: lng
+        },
+            function (data) {
+
+            });
+    }
+</script>
+
+
+<!--地圖-->
+<script>
+    // This example requires the Places library. Include the libraries=places
+    // parameter when you first load the API. For example:
+    // <script
+    // src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=places">
+
+    function initMap(dep, des) {
+        var map = new google.maps.Map(document.getElementById('map'), {
+            mapTypeControl: false,
+            center: { lat: -33.8688, lng: 151.2195 },
+            zoom: 13
+        });
+        DirectionsService = new google.maps.DirectionsService;
+        DirectionsRenderer = new google.maps.DirectionsRenderer;
+        DirectionsRenderer.setMap(map);
+        DirectionsRenderer.setPanel(document.getElementById('left-panel'))
+    }
+    function calRoute(dep, des, tranMode, stTime) {
+        var date = stTime;
+        DirectionsService.route(
+            {
+                origin: { 'placeId': dep },
+                destination: { 'placeId': des },
+                travelMode: tranMode,
+                transitOptions: {
+                    departureTime: date,
+                    modes: ['BUS', 'RAIL']
+                    //routingPreference: 'FEWER_TRANSFERS'
+                },
+                drivingOptions: {
+                    departureTime: date,
+                    trafficModel: 'optimistic'
+                }
+            }, function (response, status) {
+                if (status === 'OK') {
+                    DirectionsRenderer.setDirections(response);
+                    //console.log(response['routes'][0]['fare']['value']) //價格
+                    //console.log(response['routes'][0]['legs'][0]['duration'].value) //耗時(sec)
+                    //console.log(typeof response['routes'][0]['legs'][0]['arrival_time'].value) //到達時間(Date())
+                    //var t = date.getTime(); //轉成毫秒
+                    //date.setTime(t + response['routes'][0]['legs'][0]['duration'].value * 1000) //加上行駛時間
+                } else {
+                    window.alert('Directions request failed due to ' + status);
+                }
+            });
+    }
+
+    // 計算indexTime
+    function returnTime(dep, des, tranMode, stTime) {
+        var date = new Date(stTime.getTime());
+        if (stayTime[count]) {
+            var t = date.getTime();
+            date.setTime(t + stayTime[count])
+        }
+        var d = new Date(stTime.getTime()); //用此方法拷貝 才不會影響原本date!!!!!!!!!
+        tranMode = tranMode.toUpperCase();
+        DirectionsService.route(
+            {
+                origin: { 'placeId': dep },
+                destination: { 'placeId': des },
+                travelMode: tranMode,
+                transitOptions: {
+                    departureTime: date,
+                    modes: ['BUS', 'RAIL']
+                    //routingPreference: 'FEWER_TRANSFERS'
+                },
+                drivingOptions: {
+                    departureTime: date,
+                    trafficModel: 'optimistic'
+                }
+            }, function (response, status) {
+                if (status === 'OK') {
+                    DirectionsRenderer.setDirections(response);
+                    if (tranMode === 'TRANSIT') {
+                        console.log(response)
+                        d = response['routes'][0]['legs'][0]['arrival_time'].value;
+                        try {
+                        costTran[count] = response['routes'][0]['fare']['value'];
+                        }
+                        catch(e){
+                            costTran[count] = 0;
+                            alert('有些價格無法辨識')
+                        }
+                    } else {
+                        console.log(response)
+                        var t = date.getTime(); //轉成毫秒
+                        d.setTime(t + response['routes'][0]['legs'][0]['duration'].value * 1000); //加上行駛時間
+                    }
+                    tranTime[count] = response['routes'][0]['legs'][0]['duration'].value; //sec
+                    indexTime.push(d)
+                    count += 1;
+                    if (count === tranList.length - 1) {
+                        addTimeLine();
+                    }
+                    getStTime();
+                } else {
+                    window.alert('Directions request failed due to ' + status);
+                }
+            });
+    }
+</script>
+<script>
+    $(window).on('beforeunload', function () {
+        console.log('a')
+    }
+    );
+</script>
+
+
+<script
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCyeAdNWCl74p91fi5n8RzfBzIq06g6Zp8&libraries=places&callback=initMap"
+    async defer></script>
+
+<script>
+    function AllowDrop(event) {
+        event.preventDefault();
+    }
+    function Drag(event) {
+        event.dataTransfer.setData("text/html", event.currentTarget.id);
+    }
+    function Drop(event) {
+        event.preventDefault();
+        data = event.dataTransfer.getData("text/html");
+        event.currentTarget.appendChild(document.getElementById(data));
+    }
+</script>
+
+
+{% endblock %}

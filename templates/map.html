@@ -1,0 +1,285 @@
+{% extends 'base.html' %}
+{% block title %}map{% endblock %}
+{% block content %}
+<style>
+    #map {
+        height: 60%;
+    }
+
+    /* Optional: Makes the sample page fill the window. */
+    html,
+    body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+    }
+
+    .controls {
+        background-color: #fff;
+        border-radius: 2px;
+        border: 1px solid transparent;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        box-sizing: border-box;
+        font-family: Roboto;
+        font-size: 15px;
+        font-weight: 300;
+        height: 29px;
+        margin-right: 50px;
+        margin-top: 10px;
+        outline: none;
+        padding: 0 11px 0 13px;
+        text-overflow: ellipsis;
+        width: 400px;
+    }
+
+    .controls:focus {
+        border-color: #4d90fe;
+    }
+
+    .title {
+        font-weight: bold;
+    }
+
+    #infowindow-content {
+        display: none;
+    }
+
+    #map #infowindow-content {
+        display: inline;
+    }
+</style>
+<style>
+    div.polaroid {
+        width: 150px;
+        background-color: white;
+        box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+        float: left;
+        margin-right: 10px;
+        margin-top: 10px;
+    }
+
+    img {
+        width: 150px;
+        height: 100px;
+    }
+
+    div.container {
+        text-align: center;
+        height: 50px;
+        padding: 5px 5px;
+        overflow: auto;
+    }
+
+    button.delete {
+        height: 20px;
+        font-size: 8px;
+        font-family: DFKai-sb;
+    }
+
+    p.id {
+        display: none;
+    }
+</style>
+
+
+<div style="display: none">
+    <input id="pac-input" class="controls" type="text" placeholder="Enter a location">
+</div>
+<div id="map"></div>
+<div id="infowindow-content">
+    <span id="place-name" class="title"></span><br>
+    <strong>Place ID:</strong> <span id="place-id"></span><br>
+    <span id="place-address"></span>
+</div>
+
+
+<script>
+    // This sample uses the Place Autocomplete widget to allow the user to search
+    // for and select a place. The sample then displays an info window containing
+    // the place ID and other information about the place that the user has
+    // selected.
+
+    // This example requires the Places library. Include the libraries=places
+    // parameter when you first load the API. For example:
+    // <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=places">
+
+    function initMap() {
+        map = new google.maps.Map(document.getElementById('map'), {
+            center: { lat: -33.8688, lng: 151.2195 },
+            zoom: 13
+        });
+
+        var input = document.getElementById('pac-input');
+
+        var autocomplete = new google.maps.places.Autocomplete(input);
+        autocomplete.bindTo('bounds', map);
+
+        // Specify just the place data fields that you need.
+        autocomplete.setFields(['place_id', 'geometry', 'name']);
+
+        map.controls[google.maps.ControlPosition.TOP_LEFT].push(input);
+
+        infowindow = new google.maps.InfoWindow();
+        var infowindowContent = document.getElementById('infowindow-content');
+        infowindow.setContent(infowindowContent);
+
+        marker = new google.maps.Marker({ map: map });
+
+        marker.addListener('click', function () {
+            infowindow.open(map, marker);
+        });
+
+        autocomplete.addListener('place_changed', function () {
+            infowindow.close();
+
+            var place = autocomplete.getPlace();
+
+            if (!place.geometry) {
+                return;
+            }
+
+            if (place.geometry.viewport) {
+                map.fitBounds(place.geometry.viewport);
+            } else {
+                map.setCenter(place.geometry.location);
+                map.setZoom(17);
+            }
+            placeId = place.place_id;
+            placeLocation_lat = parseFloat(place.geometry.location.lat());
+            placeLocation_lng = parseFloat(place.geometry.location.lng());
+            console.log(place.geometry.location)
+
+            // Set the position of the marker using the place ID and location.
+            marker.setPlace({
+                placeId: place.place_id,
+                location: place.geometry.location
+            });
+
+            marker.setVisible(true);
+
+            infowindowContent.children['place-name'].textContent = place.name;
+            infowindowContent.children['place-id'].textContent = place.place_id;
+            infowindowContent.children['place-address'].textContent =
+                place.formatted_address;
+            console.log(infowindowContent)
+            infowindow.open(map, marker);
+        });
+    }
+</script>
+
+<p></p>
+
+
+
+
+<!--增加目的地-->
+<script type=text/javascript>
+    $(function() {
+      $('button#addList').on('click', function() {
+        $.getJSON($SCRIPT_ROOT + '/addMap', {
+          placeId: placeId,
+          placeLocation_lat: placeLocation_lat,
+          placeLocation_lng: placeLocation_lng
+        }, function(data) {
+          $("#result").text(data.result);
+          if (data.photo == 'https://maps.gstatic.com/tactile/pane/default_geocode-2x.png'){
+              var photo = data.photo;
+          } else {
+          var photo = 'https://maps.googleapis.com/maps/api/place/photo?maxwidth=200&photoreference=' + data.photo + '&key=AIzaSyCyeAdNWCl74p91fi5n8RzfBzIq06g6Zp8';
+          }
+          var name = data.result
+          var id = data.id
+          var $div1 = $('<div></div>')
+          .attr('class', 'polaroid')
+          var $div2 = $('<div></div>')
+          .attr('class', 'container')
+          var $text1 = $('<p>' + name + '</p>')
+          .attr('class', 'font-weight-bold')
+          var $text2 = $('<p>' + id + '</p>')
+          .attr('class', 'id')
+          var $img1 = $('<img />')
+          .attr('src', photo)
+          var $button1 = $('<button>delete</button>')
+          .attr('class', 'delete')
+          .attr('id', 'delete')
+        $('div#list').append($div1);
+        $($div1).append($button1);
+        $($div1).append($img1);
+        $($div1).append($div2);
+        $($div2).append($text1);
+        $($div2).append($text2);
+        });
+        return false;
+      });
+    });
+  </script>
+
+
+<script type=text/javascript>
+    $(function() {
+        $(document).on('click', 'button#delete', function() {
+            var p = $(this).closest('div').find('p.id').text();
+            $.getJSON($SCRIPT_ROOT + '/delMap', {
+                placeId: p
+            },
+            function(data){
+            });
+            $(this).closest('div').remove();
+        });
+    });
+</script>
+
+<button type="button" class="btn btn-warning" id="addList">Add to list</button>
+<div id="list">
+    {% if resultList %}
+    {% for data in resultList %}
+    <div class="polaroid" onclick="showLocation(this)">
+        <button class="delete" id="delete">delete</button>
+        <img src="{{ data[1] }}">
+        <div class="container">
+            <p class="font-weight-bold">{{ data[0] }}</p>
+            <p class="id" id="placeId">{{ data[2] }}</p>
+        </div>
+    </div>
+    {% endfor %}
+    {% endif %}
+
+
+    <script>
+        function showLocation(e) {
+            var placeId = $(e).find('p.id').text()
+            $.getJSON($SCRIPT_ROOT + '/search', {
+                placeId: placeId
+            },
+                function (data) {
+                    marker.setPlace({
+                        placeId: data.placeId,
+                        location: { lat: parseFloat(data.lat), lng: parseFloat(data.lng) }
+                    });
+                    marker.setVisible(true);
+                    map.setCenter({ lat: parseFloat(data.lat), lng: parseFloat(data.lng) });
+                    map.setZoom(17);
+                    //infowindow.setContent(data.placeName);
+                });
+
+        }
+
+
+
+
+    </script>
+</div>
+
+
+
+
+<!--Load the API from the specified URL
+* The async attribute allows the browser to render the page while the API loads
+* The key parameter will contain your own API key (which is not needed for this tutorial)
+* The callback parameter executes the initMap() function
+-->
+<script async defer
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCyeAdNWCl74p91fi5n8RzfBzIq06g6Zp8&libraries=places&callback=initMap">
+    </script>
+
+{% endblock %}

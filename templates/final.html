@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+{% block title %}choose{% endblock %}
+{% block content %}
+<style>
+    html,
+    body {
+        font-family: 微軟正黑體;
+    }
+</style>
+<div class="final">
+
+</div>
+
+
+
+
+<script>
+
+    function show() {
+        returnTime(index[count1][count2], index[count1][count2 + 1], tranList[count1][count2], indexTime[count1][count2])
+    }
+
+    function showList(i, j, date) {
+        if (j === (index[i].length - 1)) {
+            var $divcol2 = $('<div class="container">\
+        <div class="row">\
+        <div class="col-md-2" id="1" style="border-style:solid; border-width:1px; margin-left:-1px;">' + indexTime[i][j].getHours() + ':' + indexTime[i][j].getMinutes() + '~' + date.getHours() + ':' + date.getMinutes() + '</div>\
+        <div class="col-md-10" id="2" style="border-style:solid; border-width:1px; margin-left:-1px;">' + indexPlaceName[i][j] + '</div>\
+        <div class="col-md-12" style="border-style:dotted; border-top-style: none; border-width:1px; margin-left:-1px; margin-bottom:5px; height:50px;">備註: ' + note[i][j] + '</div>\
+        </div>\
+        </div>')
+            $('div.container.' + i + '').append($divcol2);
+        } else {
+            indexTime[i][j + 1] = new Date(indexTime[i][j + 1]);
+            var $divcol1 = $('<div class="container">\
+        <div class="row">\
+        <div class="col-md-2" id="1" style="border-style:solid; border-width:1px; margin-left:-1px;">' + indexTime[i][j].getHours() + ':' + indexTime[i][j].getMinutes() + '~' + date.getHours() + ':' + date.getMinutes() + '</div>\
+        <div class="col-md-10" id="2" style="border-style:solid; border-width:1px; margin-left:-1px;">' + indexPlaceName[i][j] + '</div>\
+        <div class="col-md-12" style="border-style:dotted; border-top-style: none; border-width:1px; margin-left:-1px; margin-bottom:5px; height:50px;">備註: ' + note[i][j] + '</div>\
+        <div class="col-md-2" style="border-style:dotted; border-width:1px; margin-left:-1px; margin-bottom:5px; height:30px;">' + date.getHours() + ':' + date.getMinutes() + '~' + indexTime[i][j + 1].getHours() + ':' + indexTime[i][j + 1].getMinutes() + '</div>\
+        <div class="col-md-10" style="border-style:dotted; border-width:1px; margin-left:-1px; margin-bottom:5px; height:30px;">' +  indexPlaceName[i][j] + '-->' + '<span class="badge badge-dark">' + tranList[i][j] + '</span>' + ' -->' + indexPlaceName[i][j + 1] + '</div>\
+        </div>\
+        </div>')
+            $('div.container.' + i + '').append($divcol1);
+        }
+    }
+
+
+
+    $(document).ready(function () {
+        $.getJSON($SCRIPT_ROOT + '/show_travel', {
+            a: 1
+        },
+            function (data) {
+                index = data.index;
+                note = data.note;
+                tranList = data.tranList;
+                stayTime = data.stayTime;
+                indexTime = data.indexTime;
+                indexPlaceName = data.indexPlaceName;
+                for (var i = 0; i < index.length; i++) {
+                    var $divDate = $('<div class="jumbotron jumbotron-fluid">\
+                    <div class="container ' + i + '">\
+                    <h1 class="display-4">'+ '第' + (i + 1) + '天' + '</h1>\
+                    </div >\
+                    </div >')
+                    $('div.final').append($divDate)
+                    for (var j = 0; j < index[i].length; j++) {
+                        var thisTime = parseInt(stayTime[i][j])
+                        indexTime[i][j] = new Date(indexTime[i][j]);
+                        var t = new Date(indexTime[i][j].getTime());
+                        var date = new Date(indexTime[i][j].getTime());
+                        date.setTime(t.getTime() + thisTime);
+                        showList(i, j, date);
+                    }
+                }
+            });
+    });
+</script>
+
+<script
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCyeAdNWCl74p91fi5n8RzfBzIq06g6Zp8&libraries=places&callback=initMap"
+    async defer></script>
+{% endblock %}

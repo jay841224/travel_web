@@ -1,0 +1,8 @@
+{% extends 'base.html' %}
+{% block title %}choose{% endblock %}
+{% block content %}
+<button type="button" class="btn btn-primary btn-lg btn-block btn-warning" style="margin-top: 10px;"
+    onclick="window.location.href='{{ url_for('map')}}'">編輯地點</button>
+<button type="button" class="btn btn-primary btn-lg btn-block"
+    onclick="window.location.href='{{ url_for('choose_day')}}'">行程規劃</button>
+{% endblock %}

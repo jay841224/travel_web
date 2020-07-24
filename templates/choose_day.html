@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% block title %}choose{% endblock %}
+{% block content %}
+<script src="{{url_for('static', filename='index.js')}}"></script>
+
+<!--日期選擇器-->
+<div>
+  <input type="text" class="TinyPicker" id="startDate">
+  <input type="text" class="TinyPicker" id="endDate">
+  <button type="button" id="setTime" class="btn btn-warning"
+  >下一步</button>
+</div>
+{% with messages = get_flashed_messages() %}
+{% if messages %}
+{% for m in messages %}
+<p>{{ m }}</p>
+{% endfor %}
+{% endif %}
+{% endwith %}
+<button type="button" id="go" class="btn btn-warning"
+    onclick="window.location.href='{{ url_for('planning')}}'">確定</button>
+
+<script>
+  document.getElementById('setTime').addEventListener('click', function () {
+    var startDate = document.getElementById('startDate').value;
+    var endDate = document.getElementById('endDate').value;
+    $.getJSON($SCRIPT_ROOT + '/addDates', {
+      startDate: startDate,
+      endDate: endDate
+    },
+      function (data) {
+        window.location.href='{{ url_for('planning')}}'
+      });
+  });
+</script>
+<script>
+  document.getElementById('startDate').innerHTML =
+    document.getElementById('endDate').innerHTML = 
+</script>
+
+<!--日期選擇器 -->
+<script>
+    new TinyPicker({
+      firstBox: document.getElementById('startDate'),
+      lastBox: document.getElementById('endDate'),
+    }).init();
+  new TinyPicker({
+    firstBox: document.getElementById('startDate'),
+    lastBox: document.getElementById('endDate'),
+    startDate: new Date('03/20/2020'),
+    endDate: new Date('07/04/2020'),
+  }).init();
+  new TinyPicker({
+    firstBox: document.getElementById('startDate'),
+    lastBox: document.getElementById('endDate'),
+    local: 'es-US'
+  }).init();
+  new TinyPicker({
+    firstBox: document.getElementById('startDate'),
+    lastBox: document.getElementById('endDate'),
+    days: ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']
+  }).init();
+  new TinyPicker({
+    firstBox: document.getElementById('startDate'),
+    lastBox: document.getElementById('endDate'),
+    success: function (startDate, endDate) { },
+    err: function () { }
+  }).init();
+</script>
+{% endblock %}
