@@ -4,7 +4,7 @@ import json
 from dateutil.parser import parse
 
 '''
-gmaps = gmaps = googlemaps.Client(
+gmaps = googlemaps.Client(
     key='AIzaSyCyeAdNWCl74p91fi5n8RzfBzIq06g6Zp8')
 detail_results = gmaps.place('ChIJCZEzfnKpQjQRy75KOs4xSsM', language='zh-tw')
 addr1 = detail_results['result']['adr_address']
@@ -28,4 +28,5 @@ string = string.split('(')
 time = parse(string[0])
 print(time)
 '''
-for i in range()
+for i in range(0):
+    pass
