@@ -2,7 +2,7 @@ import googlemaps
 
 
 def get_location(location_name):
-    gmaps = gmaps = googlemaps.Client(
+    gmaps = googlemaps.Client(
         key='AIzaSyCyeAdNWCl74p91fi5n8RzfBzIq06g6Zp8')
     target = gmaps.find_place(
         input='{}'.format(location_name),
@@ -15,7 +15,7 @@ def get_location(location_name):
 
 
 def get_detail(location_id):
-    gmaps = gmaps = googlemaps.Client(
+    gmaps = googlemaps.Client(
         key='AIzaSyCyeAdNWCl74p91fi5n8RzfBzIq06g6Zp8')
     detail_results = gmaps.place(location_id, language='zh-tw')
     name = detail_results['result']['name']
@@ -28,7 +28,7 @@ def get_detail(location_id):
 
 def get_rout_detail(startId, endId, tran, startTime):  # tran要換小寫
     tran = tran.lower()
-    gmaps = gmaps = googlemaps.Client(
+    gmaps = googlemaps.Client(
         key='AIzaSyCyeAdNWCl74p91fi5n8RzfBzIq06g6Zp8')
     result = gmaps.distance_matrix(origins='place_id:{}'.format(startId),
                                    destinations='place_id:{}'.format(endId),
